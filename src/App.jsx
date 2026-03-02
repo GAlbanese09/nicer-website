@@ -95,16 +95,9 @@ const useInView = (threshold = 0.2) => {
 };
 
 // ─── Gallery Item ───
-const GalleryItem = ({ title, category, color, index, size = "normal" }) => {
+const GalleryItem = ({ title, category, color, index, size = "normal", image }) => {
   const [hovered, setHovered] = useState(false);
   const [ref, inView] = useInView(0.1);
-
-  const patterns = [
-    "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)",
-    "radial-gradient(circle at 30% 40%, rgba(255,255,255,0.08) 0%, transparent 60%)",
-    "repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(0,0,0,0.15) 8px, rgba(0,0,0,0.15) 16px)",
-    "radial-gradient(ellipse at 70% 20%, rgba(255,255,255,0.1) 0%, transparent 50%)",
-  ];
 
   return (
     <div
@@ -116,7 +109,6 @@ const GalleryItem = ({ title, category, color, index, size = "normal" }) => {
         gridRow: size === "large" ? "span 2" : "span 1",
         position: "relative",
         background: color,
-        backgroundImage: patterns[index % 4],
         borderRadius: 4,
         overflow: "hidden",
         cursor: "pointer",
@@ -134,15 +126,29 @@ const GalleryItem = ({ title, category, color, index, size = "normal" }) => {
           : "inset 0 0 100px rgba(0,0,0,0.4)",
       }}
     >
-      {/* Noise texture overlay */}
+      {/* Background image */}
+      {image && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url(${image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            transition: "transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
+            transform: hovered ? "scale(1.08)" : "scale(1)",
+          }}
+        />
+      )}
+      {/* Dark overlay for text readability */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E\")",
-          opacity: 0.4,
-          mixBlendMode: "overlay",
+          background: hovered 
+            ? "linear-gradient(transparent 30%, rgba(0,0,0,0.7))" 
+            : "linear-gradient(transparent 20%, rgba(0,0,0,0.6))",
+          transition: "all 0.5s ease",
         }}
       />
 
@@ -216,6 +222,7 @@ const TimelineItem = ({ year, title, desc, side, index }) => {
   return (
     <div
       ref={ref}
+      className="timeline-item"
       style={{
         display: "flex",
         justifyContent: isLeft ? "flex-end" : "flex-start",
@@ -227,6 +234,7 @@ const TimelineItem = ({ year, title, desc, side, index }) => {
     >
       {/* Center dot */}
       <div
+        className="timeline-dot"
         style={{
           position: "absolute",
           left: "50%",
@@ -333,16 +341,17 @@ export default function NicerWebsite() {
     { id: "contact", label: "Contact" },
   ];
 
+  // PLACEHOLDER IMAGES — Replace these URLs with real photos from Nicer
   const galleryItems = [
-    { title: "Big Pun Memorial Wall", category: "Memorial · Bronx", color: "#8B2252", size: "large" },
-    { title: "Houston Bowery Wall", category: "Landmark · Manhattan", color: "#1a5276" },
-    { title: "BLM Foley Square", category: "Community · Manhattan", color: "#1B4332" },
-    { title: "NBA × Mitchell & Ness", category: "Commercial · Global", color: "#7B2D26" },
-    { title: "Coney Art Walls", category: "Festival · Brooklyn", color: "#4A235A" },
-    { title: "I Love The Bronx", category: "Community · Bronx", color: "#784212", size: "large" },
-    { title: "Graffiti Hall of Fame", category: "Legacy · Harlem", color: "#1B2631" },
-    { title: "A-Boogie Mural", category: "Music · Bronx", color: "#6C3483" },
-    { title: "P.S. 9 School Mural", category: "Education · Bronx", color: "#0E6655" },
+    { title: "Big Pun Memorial Wall", category: "Memorial · Bronx", color: "#8B2252", size: "large", image: "https://images.unsplash.com/photo-1579783928621-7a13d66a62d1?w=800&q=80" },
+    { title: "Houston Bowery Wall", category: "Landmark · Manhattan", color: "#1a5276", image: "https://images.unsplash.com/photo-1555532538-dcdbd01d373d?w=600&q=80" },
+    { title: "BLM Foley Square", category: "Community · Manhattan", color: "#1B4332", image: "https://images.unsplash.com/photo-1582391564728-2e8f3508f9f8?w=600&q=80" },
+    { title: "NBA × Mitchell & Ness", category: "Commercial · Global", color: "#7B2D26", image: "https://images.unsplash.com/photo-1601042879364-f3947d3f9c16?w=600&q=80" },
+    { title: "Coney Art Walls", category: "Festival · Brooklyn", color: "#4A235A", image: "https://images.unsplash.com/photo-1561059488-916d69792237?w=600&q=80" },
+    { title: "I Love The Bronx", category: "Community · Bronx", color: "#784212", size: "large", image: "https://images.unsplash.com/photo-1569880153113-76e33fc52b5f?w=800&q=80" },
+    { title: "Graffiti Hall of Fame", category: "Legacy · Harlem", color: "#1B2631", image: "https://images.unsplash.com/photo-1551966775-a4ddc8df052b?w=600&q=80" },
+    { title: "A-Boogie Mural", category: "Music · Bronx", color: "#6C3483", image: "https://images.unsplash.com/photo-1562701501-d8fa2e4c8f52?w=600&q=80" },
+    { title: "P.S. 9 School Mural", category: "Education · Bronx", color: "#0E6655", image: "https://images.unsplash.com/photo-1583225214464-9296029427aa?w=600&q=80" },
   ];
 
   const timelineData = [
@@ -419,6 +428,25 @@ export default function NicerWebsite() {
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0a0a0a; }
         ::-webkit-scrollbar-thumb { background: #FF2D55; border-radius: 3px; }
+        
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .hamburger { display: flex !important; }
+          .mobile-menu { display: flex !important; }
+          .about-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 24px !important; }
+          .gallery-grid { grid-template-columns: 1fr !important; }
+          .gallery-grid > * { grid-column: span 1 !important; grid-row: span 1 !important; }
+          .services-grid { grid-template-columns: 1fr !important; }
+          .timeline-item { padding-left: 40px !important; padding-right: 16px !important; justify-content: flex-start !important; }
+          .timeline-line { left: 16px !important; }
+          .timeline-dot { left: 16px !important; }
+          .footer-inner { flex-direction: column; text-align: center; }
+          .contact-buttons { flex-direction: column !important; align-items: center; }
+          .hero-buttons { flex-direction: column !important; align-items: center; }
+          .floating-stats { position: relative !important; bottom: auto !important; right: auto !important; margin-top: 16px; }
+          .about-visual { aspect-ratio: 16/9 !important; }
+        }
       `}</style>
 
       {/* Spray Particles */}
@@ -434,7 +462,7 @@ export default function NicerWebsite() {
           left: 0,
           right: 0,
           zIndex: 1000,
-          padding: "16px 40px",
+          padding: "16px clamp(16px, 4vw, 40px)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -461,7 +489,7 @@ export default function NicerWebsite() {
         </div>
 
         {/* Desktop nav */}
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+        <div className="desktop-nav" style={{ display: "flex", gap: 32, alignItems: "center" }}>
           {navItems.map((item) => (
             <a
               key={item.id}
@@ -498,7 +526,82 @@ export default function NicerWebsite() {
             </a>
           ))}
         </div>
+
+        {/* Hamburger button */}
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{
+            display: "none",
+            flexDirection: "column",
+            gap: 5,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 8,
+            zIndex: 1002,
+          }}
+        >
+          <span style={{
+            width: 24, height: 2, background: "#fff",
+            transition: "all 0.3s ease",
+            transform: menuOpen ? "rotate(45deg) translate(5px, 5px)" : "none",
+          }} />
+          <span style={{
+            width: 24, height: 2, background: "#fff",
+            transition: "all 0.3s ease",
+            opacity: menuOpen ? 0 : 1,
+          }} />
+          <span style={{
+            width: 24, height: 2, background: "#fff",
+            transition: "all 0.3s ease",
+            transform: menuOpen ? "rotate(-45deg) translate(5px, -5px)" : "none",
+          }} />
+        </button>
       </nav>
+
+      {/* Mobile menu overlay */}
+      <div
+        className="mobile-menu"
+        style={{
+          display: "none",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(10,10,10,0.97)",
+          zIndex: 999,
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 32,
+          opacity: menuOpen ? 1 : 0,
+          pointerEvents: menuOpen ? "auto" : "none",
+          transition: "opacity 0.3s ease",
+        }}
+      >
+        {navItems.map((item, i) => (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            onClick={() => { setActiveNav(item.id); setMenuOpen(false); }}
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 36,
+              letterSpacing: 4,
+              textTransform: "uppercase",
+              color: activeNav === item.id ? "#FF2D55" : "rgba(255,255,255,0.7)",
+              textDecoration: "none",
+              transition: "all 0.3s ease",
+              transform: menuOpen ? "translateY(0)" : "translateY(20px)",
+              transitionDelay: `${i * 0.05}s`,
+            }}
+          >
+            {item.label}
+          </a>
+        ))}
+      </div>
 
       {/* ═══════════ HERO SECTION ═══════════ */}
       <section
@@ -630,6 +733,7 @@ export default function NicerWebsite() {
               justifyContent: "center",
               flexWrap: "wrap",
             }}
+            className="hero-buttons"
           >
             <a
               href="#work"
@@ -746,12 +850,13 @@ export default function NicerWebsite() {
       </div>
 
       {/* ═══════════ ABOUT SECTION ═══════════ */}
-      <section id="about" style={{ padding: "120px 40px", maxWidth: 1200, margin: "0 auto" }}>
+      <section id="about" style={{ padding: "clamp(60px, 10vw, 120px) clamp(16px, 4vw, 40px)", maxWidth: 1200, margin: "0 auto" }}>
         {(() => {
           const [ref, inView] = useInView();
           return (
             <div
               ref={ref}
+              className="about-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
@@ -762,6 +867,7 @@ export default function NicerWebsite() {
               {/* Left - visual */}
               <div style={{ position: "relative" }}>
                 <div
+                  className="about-visual"
                   style={{
                     width: "100%",
                     aspectRatio: "3/4",
@@ -834,6 +940,7 @@ export default function NicerWebsite() {
 
                 {/* Floating stats card */}
                 <div
+                  className="floating-stats"
                   style={{
                     position: "absolute",
                     bottom: -30,
@@ -998,6 +1105,7 @@ export default function NicerWebsite() {
             gap: 40,
             textAlign: "center",
           }}
+          className="stats-grid"
         >
           {[
             { num: 120, suffix: "+", label: "Memorial Murals" },
@@ -1035,7 +1143,7 @@ export default function NicerWebsite() {
       </section>
 
       {/* ═══════════ WORK / GALLERY ═══════════ */}
-      <section id="work" style={{ padding: "120px 40px", maxWidth: 1400, margin: "0 auto" }}>
+      <section id="work" style={{ padding: "clamp(60px, 10vw, 120px) clamp(16px, 4vw, 40px)", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
           <div
             style={{
@@ -1052,7 +1160,7 @@ export default function NicerWebsite() {
           <h2
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 64,
+              fontSize: "clamp(40px, 8vw, 64px)",
               lineHeight: 1,
             }}
           >
@@ -1061,6 +1169,7 @@ export default function NicerWebsite() {
         </div>
 
         <div
+          className="gallery-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -1078,7 +1187,7 @@ export default function NicerWebsite() {
       <section
         id="journey"
         style={{
-          padding: "120px 40px",
+          padding: "clamp(60px, 10vw, 120px) clamp(16px, 4vw, 40px)",
           position: "relative",
           maxWidth: 1000,
           margin: "0 auto",
@@ -1110,6 +1219,7 @@ export default function NicerWebsite() {
 
         {/* Center line */}
         <div
+          className="timeline-line"
           style={{
             position: "absolute",
             left: "50%",
@@ -1136,7 +1246,7 @@ export default function NicerWebsite() {
       <section
         id="services"
         style={{
-          padding: "120px 40px",
+          padding: "clamp(60px, 10vw, 120px) clamp(16px, 4vw, 40px)",
           background:
             "linear-gradient(180deg, transparent 0%, rgba(255,45,85,0.04) 50%, transparent 100%)",
         }}
@@ -1167,6 +1277,7 @@ export default function NicerWebsite() {
           </div>
 
           <div
+            className="services-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
@@ -1267,7 +1378,7 @@ export default function NicerWebsite() {
       <section
         id="contact"
         style={{
-          padding: "140px 40px",
+          padding: "clamp(60px, 10vw, 140px) clamp(16px, 4vw, 40px)",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
@@ -1326,6 +1437,7 @@ export default function NicerWebsite() {
           </p>
 
           <div
+            className="contact-buttons"
             style={{
               display: "flex",
               gap: 20,
@@ -1383,6 +1495,7 @@ export default function NicerWebsite() {
 
       {/* ═══════════ FOOTER ═══════════ */}
       <footer
+        className="footer-inner"
         style={{
           padding: "40px",
           borderTop: "1px solid rgba(255,255,255,0.06)",
