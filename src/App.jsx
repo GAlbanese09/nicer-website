@@ -95,121 +95,260 @@ const useInView = (threshold = 0.2) => {
 };
 
 // ─── Gallery Item ───
-const GalleryItem = ({ title, category, color, index, size = "normal", image }) => {
+// ─── Masonry Image Card ───
+const MasonryImage = ({ src, title, index, onClick }) => {
   const [hovered, setHovered] = useState(false);
-  const [ref, inView] = useInView(0.1);
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <div
-      ref={ref}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
       style={{
-        gridColumn: size === "large" ? "span 2" : "span 1",
-        gridRow: size === "large" ? "span 2" : "span 1",
+        breakInside: "avoid",
+        marginBottom: 16,
         position: "relative",
-        background: color,
-        borderRadius: 4,
+        borderRadius: 6,
         overflow: "hidden",
         cursor: "pointer",
-        minHeight: size === "large" ? 420 : 260,
-        transform: inView
-          ? hovered
-            ? "scale(1.03) rotate(-0.5deg)"
-            : "scale(1)"
-          : "scale(0.85) rotate(2deg)",
-        opacity: inView ? 1 : 0,
-        transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-        transitionDelay: `${index * 0.08}s`,
-        boxShadow: hovered
-          ? `0 20px 60px ${color}66, inset 0 0 100px rgba(0,0,0,0.3)`
-          : "inset 0 0 100px rgba(0,0,0,0.4)",
+        animation: `galleryReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.07}s both`,
       }}
     >
-      {/* Background image */}
-      {image && (
+      {/* Shimmer placeholder */}
+      {!loaded && (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `url(${image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            transition: "transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
-            transform: hovered ? "scale(1.08)" : "scale(1)",
+            width: "100%",
+            paddingBottom: "75%",
+            background: "linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%)",
+            backgroundSize: "200% 100%",
+            animation: "shimmer 1.5s infinite",
+            borderRadius: 6,
           }}
         />
       )}
-      {/* Dark overlay for text readability */}
+      <img
+        src={src}
+        alt={title}
+        onLoad={() => setLoaded(true)}
+        style={{
+          width: "100%",
+          display: loaded ? "block" : "none",
+          borderRadius: 6,
+          transition: "transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
+          transform: hovered ? "scale(1.05)" : "scale(1)",
+        }}
+      />
+      {/* Hover overlay */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: hovered 
-            ? "linear-gradient(transparent 30%, rgba(0,0,0,0.7))" 
-            : "linear-gradient(transparent 20%, rgba(0,0,0,0.6))",
-          transition: "all 0.5s ease",
+          background: "linear-gradient(transparent 40%, rgba(0,0,0,0.85))",
+          opacity: hovered ? 1 : 0,
+          transition: "opacity 0.4s ease",
+          display: "flex",
+          alignItems: "flex-end",
+          padding: 20,
+          borderRadius: 6,
+        }}
+      >
+        <div style={{ transform: hovered ? "translateY(0)" : "translateY(10px)", transition: "transform 0.4s ease" }}>
+          <div
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 22,
+              color: "#fff",
+              lineHeight: 1.1,
+            }}
+          >
+            {title}
+          </div>
+          <div
+            style={{
+              fontFamily: "'Oswald', sans-serif",
+              fontSize: 11,
+              letterSpacing: 2,
+              color: "#FF2D55",
+              marginTop: 4,
+              textTransform: "uppercase",
+            }}
+          >
+            View Full Size →
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Lightbox Component ───
+const Lightbox = ({ images, index, onClose, onPrev, onNext }) => {
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") onPrev();
+      if (e.key === "ArrowRight") onNext();
+    };
+    window.addEventListener("keydown", handler);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = "";
+    };
+  }, [onClose, onPrev, onNext]);
+
+  if (index < 0 || !images[index]) return null;
+  const img = images[index];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        background: "rgba(0,0,0,0.92)",
+        backdropFilter: "blur(20px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "lightboxIn 0.3s ease",
+        cursor: "zoom-out",
+      }}
+    >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 24,
+          background: "none",
+          border: "none",
+          color: "#fff",
+          fontSize: 32,
+          cursor: "pointer",
+          zIndex: 10001,
+          fontWeight: 300,
+          opacity: 0.7,
+          transition: "opacity 0.3s",
+        }}
+        onMouseEnter={(e) => (e.target.style.opacity = 1)}
+        onMouseLeave={(e) => (e.target.style.opacity = 0.7)}
+      >
+        ✕
+      </button>
+
+      {/* Counter */}
+      <div
+        style={{
+          position: "absolute",
+          top: 24,
+          left: 24,
+          fontFamily: "'Oswald', sans-serif",
+          fontSize: 14,
+          letterSpacing: 2,
+          color: "rgba(255,255,255,0.5)",
+        }}
+      >
+        {index + 1} / {images.length}
+      </div>
+
+      {/* Title */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 28,
+          color: "#fff",
+          textAlign: "center",
+          textShadow: "0 2px 20px rgba(0,0,0,0.8)",
+        }}
+      >
+        {img.title}
+      </div>
+
+      {/* Prev arrow */}
+      {index > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onPrev(); }}
+          style={{
+            position: "absolute",
+            left: 16,
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "#fff",
+            fontSize: 28,
+            width: 50,
+            height: 50,
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.3s",
+            zIndex: 10001,
+          }}
+          onMouseEnter={(e) => { e.target.style.background = "rgba(255,45,85,0.3)"; e.target.style.borderColor = "#FF2D55"; }}
+          onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.08)"; e.target.style.borderColor = "rgba(255,255,255,0.15)"; }}
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Next arrow */}
+      {index < images.length - 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNext(); }}
+          style={{
+            position: "absolute",
+            right: 16,
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "#fff",
+            fontSize: 28,
+            width: 50,
+            height: 50,
+            borderRadius: "50%",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.3s",
+            zIndex: 10001,
+          }}
+          onMouseEnter={(e) => { e.target.style.background = "rgba(255,45,85,0.3)"; e.target.style.borderColor = "#FF2D55"; }}
+          onMouseLeave={(e) => { e.target.style.background = "rgba(255,255,255,0.08)"; e.target.style.borderColor = "rgba(255,255,255,0.15)"; }}
+        >
+          ›
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        key={img.src}
+        src={img.src}
+        alt={img.title}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: "90vw",
+          maxHeight: "85vh",
+          objectFit: "contain",
+          borderRadius: 4,
+          animation: "lightboxImgIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          cursor: "default",
+          boxShadow: "0 0 80px rgba(0,0,0,0.5)",
         }}
       />
-
-      {/* Content overlay */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: "60px 24px 24px",
-          background: "linear-gradient(transparent, rgba(0,0,0,0.85))",
-          transform: hovered ? "translateY(0)" : "translateY(20px)",
-          opacity: hovered ? 1 : 0.7,
-          transition: "all 0.4s ease",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "'Oswald', sans-serif",
-            fontSize: 11,
-            letterSpacing: 3,
-            textTransform: "uppercase",
-            color: color,
-            marginBottom: 6,
-            filter: "brightness(1.5)",
-          }}
-        >
-          {category}
-        </div>
-        <div
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: size === "large" ? 32 : 22,
-            color: "#fff",
-            lineHeight: 1.1,
-          }}
-        >
-          {title}
-        </div>
-      </div>
-
-      {/* Corner tag */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          width: 40,
-          height: 40,
-          border: `2px solid ${hovered ? "#fff" : "rgba(255,255,255,0.3)"}`,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.3s ease",
-          transform: hovered ? "rotate(45deg) scale(1.1)" : "rotate(0deg)",
-        }}
-      >
-        <span style={{ color: "#fff", fontSize: 18, fontWeight: 300 }}>→</span>
-      </div>
     </div>
   );
 };
@@ -341,16 +480,64 @@ export default function NicerWebsite() {
     { id: "contact", label: "Contact" },
   ];
 
-  // Gallery images — real photos in public/gallery/
-  const galleryItems = [
-    { title: "Big Pun Memorial Wall", category: "Memorial · Bronx", color: "#8B2252", size: "large", image: "/gallery/big-pun-memorial-wall.jpg" },
-    { title: "Houston Bowery Wall", category: "Landmark · Manhattan", color: "#1a5276", image: "/gallery/Houston-Bowery-Wall.jpg" },
-    { title: "BLM Foley Square", category: "Community · Manhattan", color: "#1B4332", image: "/gallery/BLM-Foley-Square.jpg" },
-    { title: "Nicer Character Piece", category: "Aerosol · Bronx", color: "#3d2b1f", image: "/gallery/Nicer-v.jpg" },
-    { title: "I Love The Bronx", category: "Community · Bronx", color: "#b71c1c", size: "large", image: "/gallery/i-love-the-bronx.jpg" },
-    { title: "Graffiti Hall of Fame", category: "Legacy · Harlem", color: "#1a237e", image: "/gallery/Graffiti_Hall_of_Fame.jpg" },
-    { title: "WHEELS Academy Mural", category: "Education · Bronx", color: "#0E6655", image: "/gallery/Wheels-Academy.jpg" },
-  ];
+  const [activeCollection, setActiveCollection] = useState("murals");
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
+  const [galleryKey, setGalleryKey] = useState(0);
+
+  const R2 = "https://images.nicertatscru.com";
+
+  const collections = {
+    murals: {
+      name: "Murals",
+      images: [
+        { src: "/gallery/big-pun-memorial-wall.jpg", title: "Big Pun Memorial Wall" },
+        { src: "/gallery/Houston-Bowery-Wall.jpg", title: "Houston Bowery Wall" },
+        { src: "/gallery/BLM-Foley-Square.jpg", title: "BLM Foley Square" },
+        { src: "/gallery/Nicer-v.jpg", title: "Nicer Character Piece" },
+        { src: "/gallery/i-love-the-bronx.jpg", title: "I Love The Bronx" },
+        { src: "/gallery/Graffiti_Hall_of_Fame.jpg", title: "Graffiti Hall of Fame" },
+        { src: "/gallery/Wheels-Academy.jpg", title: "WHEELS Academy Mural" },
+      ],
+    },
+    morocco: {
+      name: "Morocco Paintings",
+      images: [
+        { src: `${R2}/morocco-paintings/Conflict.jpg`, title: "Conflict" },
+        { src: `${R2}/morocco-paintings/The-Hand.jpg`, title: "The Hand" },
+        { src: `${R2}/morocco-paintings/The-Third-Eye.jpg`, title: "The Third Eye" },
+        { src: `${R2}/morocco-paintings/What-makes-the-world-go-round.jpg`, title: "What Makes the World Go Round" },
+      ],
+    },
+    childAtPlay: {
+      name: "Like a Child at Play",
+      images: [
+        { src: `${R2}/like-a-child-at-play/Paintings-inventory-Like-a-child-at-play-show-page-1.jpg`, title: "Like a Child at Play — I" },
+        { src: `${R2}/like-a-child-at-play/Paintings-inventory-sheet-like-a-child-at-play-show-page-2.jpg`, title: "Like a Child at Play — II" },
+      ],
+    },
+    naughtyButNicer: {
+      name: "Naughty but Nicer",
+      images: [
+        { src: `${R2}/naughty-but-nicer/Blue%20with%20Red%20Tag.jpg`, title: "Blue with Red Tag" },
+        { src: `${R2}/naughty-but-nicer/Drip-Cover.jpg`, title: "Drip Cover" },
+        { src: `${R2}/naughty-but-nicer/Get-Milked.jpg`, title: "Get Milked" },
+        { src: `${R2}/naughty-but-nicer/IMG_2492.JPG`, title: "Untitled Study I" },
+        { src: `${R2}/naughty-but-nicer/IMG_2500.JPG`, title: "Untitled Study II" },
+        { src: `${R2}/naughty-but-nicer/IMG_3424.JPG`, title: "Untitled Study III" },
+        { src: `${R2}/naughty-but-nicer/Paintings-inventory-sheet-page-3.jpg`, title: "Collection Overview" },
+        { src: `${R2}/naughty-but-nicer/Untitled-1.jpg`, title: "Naughty but Nicer I" },
+        { src: `${R2}/naughty-but-nicer/Untitled-2.jpg`, title: "Naughty but Nicer II" },
+        { src: `${R2}/naughty-but-nicer/Untitled-3.jpg`, title: "Naughty but Nicer III" },
+      ],
+    },
+  };
+
+  const currentImages = collections[activeCollection]?.images || [];
+
+  const switchCollection = (id) => {
+    setActiveCollection(id);
+    setGalleryKey((k) => k + 1);
+  };
 
   const timelineData = [
     { year: "1980", title: "T.A.T. Cru is Born", desc: "Founded in the South Bronx. Young writers hit the 2, 5, and 6 subway lines with window-down whole car murals." },
@@ -420,6 +607,26 @@ export default function NicerWebsite() {
           0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.4); }
           50% { box-shadow: 0 0 0 15px rgba(255,45,85,0); }
         }
+        @keyframes galleryReveal {
+          0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes lightboxIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes lightboxImgIn {
+          0% { opacity: 0; transform: scale(0.9); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes tabSlide {
+          0% { transform: scaleX(0); }
+          100% { transform: scaleX(1); }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         ::selection { background: #FF2D55; color: #fff; }
@@ -435,6 +642,13 @@ export default function NicerWebsite() {
           .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 24px !important; }
           .gallery-grid { grid-template-columns: 1fr !important; }
           .gallery-grid > * { grid-column: span 1 !important; grid-row: span 1 !important; }
+          .gallery-masonry { column-count: 1 !important; }
+          .gallery-tabs { gap: 0 !important; }
+          .gallery-tab { font-size: 11px !important; padding: 10px 14px !important; letter-spacing: 1.5px !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .gallery-masonry { column-count: 2 !important; }
+        }
           .services-grid { grid-template-columns: 1fr !important; }
           .timeline-item { padding-left: 40px !important; padding-right: 16px !important; justify-content: flex-start !important; }
           .timeline-line { left: 16px !important; }
@@ -1142,7 +1356,8 @@ export default function NicerWebsite() {
 
       {/* ═══════════ WORK / GALLERY ═══════════ */}
       <section id="work" style={{ padding: "clamp(60px, 10vw, 120px) clamp(16px, 4vw, 40px)", maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
+        {/* Section header */}
+        <div style={{ textAlign: "center", marginBottom: 50 }}>
           <div
             style={{
               fontFamily: "'Oswald', sans-serif",
@@ -1153,33 +1368,143 @@ export default function NicerWebsite() {
               marginBottom: 12,
             }}
           >
-            Portfolio
+            Collections
           </div>
           <h2
             style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: "clamp(40px, 8vw, 64px)",
+              fontSize: "clamp(40px, 8vw, 72px)",
               lineHeight: 1,
+              marginBottom: 16,
             }}
           >
-            Selected Works
+            The Gallery
           </h2>
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 15,
+              color: "rgba(255,255,255,0.4)",
+              maxWidth: 500,
+              margin: "0 auto",
+            }}
+          >
+            Four decades of aerosol mastery — from Bronx walls to Moroccan canvas
+          </p>
         </div>
 
+        {/* Collection tabs */}
         <div
-          className="gallery-grid"
+          className="gallery-tabs"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 16,
-            gridAutoRows: "minmax(260px, auto)",
+            display: "flex",
+            justifyContent: "center",
+            gap: 8,
+            marginBottom: 50,
+            flexWrap: "wrap",
           }}
         >
-          {galleryItems.map((item, i) => (
-            <GalleryItem key={i} index={i} {...item} />
+          {Object.entries(collections).map(([id, col]) => (
+            <button
+              key={id}
+              className="gallery-tab"
+              onClick={() => switchCollection(id)}
+              style={{
+                fontFamily: "'Oswald', sans-serif",
+                fontSize: 13,
+                letterSpacing: 2.5,
+                textTransform: "uppercase",
+                padding: "12px 24px",
+                background: activeCollection === id ? "rgba(255,45,85,0.12)" : "rgba(255,255,255,0.03)",
+                color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.4)",
+                border: activeCollection === id ? "1px solid rgba(255,45,85,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 50,
+                cursor: "pointer",
+                transition: "all 0.4s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              {col.name}
+              <span
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  padding: "2px 8px",
+                  borderRadius: 20,
+                  background: activeCollection === id ? "rgba(255,45,85,0.25)" : "rgba(255,255,255,0.06)",
+                  color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.3)",
+                  fontWeight: 600,
+                }}
+              >
+                {col.images.length}
+              </span>
+            </button>
           ))}
         </div>
+
+        {/* Masonry grid */}
+        <div
+          key={galleryKey}
+          className="gallery-masonry"
+          style={{
+            columnCount: 3,
+            columnGap: 16,
+          }}
+        >
+          {currentImages.map((img, i) => (
+            <MasonryImage
+              key={`${activeCollection}-${i}`}
+              src={img.src}
+              title={img.title}
+              index={i}
+              onClick={() => setLightboxIndex(i)}
+            />
+          ))}
+        </div>
+
+        {/* Collection description footer */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 50,
+            padding: "30px 0",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Permanent Marker', cursive",
+              fontSize: 16,
+              color: "rgba(255,45,85,0.5)",
+            }}
+          >
+            {collections[activeCollection]?.name}
+          </div>
+          <div
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              color: "rgba(255,255,255,0.25)",
+              marginTop: 6,
+            }}
+          >
+            {currentImages.length} works · Click any piece to view full size
+          </div>
+        </div>
       </section>
+
+      {/* Lightbox */}
+      {lightboxIndex >= 0 && (
+        <Lightbox
+          images={currentImages}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(-1)}
+          onPrev={() => setLightboxIndex((i) => Math.max(0, i - 1))}
+          onNext={() => setLightboxIndex((i) => Math.min(currentImages.length - 1, i + 1))}
+        />
+      )}
 
       {/* ═══════════ JOURNEY TIMELINE ═══════════ */}
       <section
