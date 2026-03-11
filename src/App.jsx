@@ -1,4 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import AdminPanel from "./AdminPanel";
+
+// ─── Hash Router Wrapper ───
+function AppRouter() {
+  const [hash, setHash] = useState(window.location.hash);
+
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  if (hash === "#admin") return <AdminPanel />;
+  return <NicerWebsite />;
+}
 
 // ─── Spray Paint Particle System ───
 const SprayParticle = ({ x, y, color, size, delay }) => (
@@ -440,7 +455,9 @@ const TimelineItem = ({ year, title, desc, side, index }) => {
 };
 
 // ─── Main App ───
-export default function NicerWebsite() {
+export default AppRouter;
+
+function NicerWebsite() {
   const [scrollY, setScrollY] = useState(0);
   const [particles, setParticles] = useState([]);
   const [activeNav, setActiveNav] = useState("home");
@@ -480,57 +497,28 @@ export default function NicerWebsite() {
     { id: "contact", label: "Contact" },
   ];
 
-  const [activeCollection, setActiveCollection] = useState("murals");
+  const [collections, setCollections] = useState({});
+  const [collectionsLoading, setCollectionsLoading] = useState(true);
+  const [activeCollection, setActiveCollection] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [galleryKey, setGalleryKey] = useState(0);
 
-  const R2 = "https://images.nicertatscru.com";
-
-  const collections = {
-    murals: {
-      name: "Murals",
-      images: [
-        { src: "/gallery/big-pun-memorial-wall.jpg", title: "Big Pun Memorial Wall" },
-        { src: "/gallery/Houston-Bowery-Wall.jpg", title: "Houston Bowery Wall" },
-        { src: "/gallery/BLM-Foley-Square.jpg", title: "BLM Foley Square" },
-        { src: "/gallery/Nicer-v.jpg", title: "Nicer Character Piece" },
-        { src: "/gallery/i-love-the-bronx.jpg", title: "I Love The Bronx" },
-        { src: "/gallery/Graffiti_Hall_of_Fame.jpg", title: "Graffiti Hall of Fame" },
-        { src: "/gallery/Wheels-Academy.jpg", title: "WHEELS Academy Mural" },
-      ],
-    },
-    morocco: {
-      name: "Morocco Paintings",
-      images: [
-        { src: `${R2}/morocco-paintings/Conflict.jpg`, title: "Conflict" },
-        { src: `${R2}/morocco-paintings/The-Hand.jpg`, title: "The Hand" },
-        { src: `${R2}/morocco-paintings/The-Third-Eye.jpg`, title: "The Third Eye" },
-        { src: `${R2}/morocco-paintings/What-makes-the-world-go-round.jpg`, title: "What Makes the World Go Round" },
-      ],
-    },
-    childAtPlay: {
-      name: "Like a Child at Play",
-      images: [
-        { src: `${R2}/like-a-child-at-play/Paintings-inventory-Like-a-child-at-play-show-page-1.jpg`, title: "Like a Child at Play — I" },
-        { src: `${R2}/like-a-child-at-play/Paintings-inventory-sheet-like-a-child-at-play-show-page-2.jpg`, title: "Like a Child at Play — II" },
-      ],
-    },
-    naughtyButNicer: {
-      name: "Naughty but Nicer",
-      images: [
-        { src: `${R2}/naughty-but-nicer/Blue%20with%20Red%20Tag.jpg`, title: "Blue with Red Tag" },
-        { src: `${R2}/naughty-but-nicer/Drip-Cover.jpg`, title: "Drip Cover" },
-        { src: `${R2}/naughty-but-nicer/Get-Milked.jpg`, title: "Get Milked" },
-        { src: `${R2}/naughty-but-nicer/IMG_2492.JPG`, title: "Untitled Study I" },
-        { src: `${R2}/naughty-but-nicer/IMG_2500.JPG`, title: "Untitled Study II" },
-        { src: `${R2}/naughty-but-nicer/IMG_3424.JPG`, title: "Untitled Study III" },
-        { src: `${R2}/naughty-but-nicer/Paintings-inventory-sheet-page-3.jpg`, title: "Collection Overview" },
-        { src: `${R2}/naughty-but-nicer/Untitled-1.jpg`, title: "Naughty but Nicer I" },
-        { src: `${R2}/naughty-but-nicer/Untitled-2.jpg`, title: "Naughty but Nicer II" },
-        { src: `${R2}/naughty-but-nicer/Untitled-3.jpg`, title: "Naughty but Nicer III" },
-      ],
-    },
-  };
+  useEffect(() => {
+    fetch("https://images.nicertatscru.com/manifest.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const obj = {};
+        data.collections.forEach((col) => {
+          obj[col.id] = { name: col.name, images: col.images };
+        });
+        setCollections(obj);
+        setActiveCollection(data.collections[0]?.id || "");
+      })
+      .catch(() => {
+        setCollections({});
+      })
+      .finally(() => setCollectionsLoading(false));
+  }, []);
 
   const currentImages = collections[activeCollection]?.images || [];
 
@@ -1393,106 +1381,136 @@ export default function NicerWebsite() {
           </p>
         </div>
 
-        {/* Collection tabs */}
-        <div
-          className="gallery-tabs"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 8,
-            marginBottom: 50,
-            flexWrap: "wrap",
-          }}
-        >
-          {Object.entries(collections).map(([id, col]) => (
-            <button
-              key={id}
-              className="gallery-tab"
-              onClick={() => switchCollection(id)}
+        {/* Gallery content — loading / empty / loaded */}
+        {collectionsLoading ? (
+          /* Shimmer placeholders while loading */
+          <div className="gallery-masonry" style={{ columnCount: 3, columnGap: 16 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  breakInside: "avoid",
+                  marginBottom: 16,
+                  width: "100%",
+                  paddingBottom: `${55 + (i % 3) * 15}%`,
+                  background: "linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer 1.5s infinite",
+                  borderRadius: 6,
+                }}
+              />
+            ))}
+          </div>
+        ) : Object.keys(collections).length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 20px" }}>
+            <div style={{ fontFamily: "'Permanent Marker', cursive", fontSize: 20, color: "rgba(255,45,85,0.5)" }}>
+              Gallery coming soon
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Collection tabs */}
+            <div
+              className="gallery-tabs"
               style={{
-                fontFamily: "'Oswald', sans-serif",
-                fontSize: 13,
-                letterSpacing: 2.5,
-                textTransform: "uppercase",
-                padding: "12px 24px",
-                background: activeCollection === id ? "rgba(255,45,85,0.12)" : "rgba(255,255,255,0.03)",
-                color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.4)",
-                border: activeCollection === id ? "1px solid rgba(255,45,85,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 50,
-                cursor: "pointer",
-                transition: "all 0.4s ease",
                 display: "flex",
-                alignItems: "center",
+                justifyContent: "center",
                 gap: 8,
+                marginBottom: 50,
+                flexWrap: "wrap",
               }}
             >
-              {col.name}
-              <span
+              {Object.entries(collections).map(([id, col]) => (
+                <button
+                  key={id}
+                  className="gallery-tab"
+                  onClick={() => switchCollection(id)}
+                  style={{
+                    fontFamily: "'Oswald', sans-serif",
+                    fontSize: 13,
+                    letterSpacing: 2.5,
+                    textTransform: "uppercase",
+                    padding: "12px 24px",
+                    background: activeCollection === id ? "rgba(255,45,85,0.12)" : "rgba(255,255,255,0.03)",
+                    color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.4)",
+                    border: activeCollection === id ? "1px solid rgba(255,45,85,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 50,
+                    cursor: "pointer",
+                    transition: "all 0.4s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  {col.name}
+                  <span
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 11,
+                      padding: "2px 8px",
+                      borderRadius: 20,
+                      background: activeCollection === id ? "rgba(255,45,85,0.25)" : "rgba(255,255,255,0.06)",
+                      color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.3)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {col.images.length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Masonry grid */}
+            <div
+              key={galleryKey}
+              className="gallery-masonry"
+              style={{
+                columnCount: 3,
+                columnGap: 16,
+              }}
+            >
+              {currentImages.map((img, i) => (
+                <MasonryImage
+                  key={`${activeCollection}-${i}`}
+                  src={img.src}
+                  title={img.title}
+                  index={i}
+                  onClick={() => setLightboxIndex(i)}
+                />
+              ))}
+            </div>
+
+            {/* Collection description footer */}
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: 50,
+                padding: "30px 0",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 11,
-                  padding: "2px 8px",
-                  borderRadius: 20,
-                  background: activeCollection === id ? "rgba(255,45,85,0.25)" : "rgba(255,255,255,0.06)",
-                  color: activeCollection === id ? "#FF2D55" : "rgba(255,255,255,0.3)",
-                  fontWeight: 600,
+                  fontFamily: "'Permanent Marker', cursive",
+                  fontSize: 16,
+                  color: "rgba(255,45,85,0.5)",
                 }}
               >
-                {col.images.length}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Masonry grid */}
-        <div
-          key={galleryKey}
-          className="gallery-masonry"
-          style={{
-            columnCount: 3,
-            columnGap: 16,
-          }}
-        >
-          {currentImages.map((img, i) => (
-            <MasonryImage
-              key={`${activeCollection}-${i}`}
-              src={img.src}
-              title={img.title}
-              index={i}
-              onClick={() => setLightboxIndex(i)}
-            />
-          ))}
-        </div>
-
-        {/* Collection description footer */}
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 50,
-            padding: "30px 0",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "'Permanent Marker', cursive",
-              fontSize: 16,
-              color: "rgba(255,45,85,0.5)",
-            }}
-          >
-            {collections[activeCollection]?.name}
-          </div>
-          <div
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              color: "rgba(255,255,255,0.25)",
-              marginTop: 6,
-            }}
-          >
-            {currentImages.length} works · Click any piece to view full size
-          </div>
-        </div>
+                {collections[activeCollection]?.name}
+              </div>
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.25)",
+                  marginTop: 6,
+                }}
+              >
+                {currentImages.length} works · Click any piece to view full size
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       {/* Lightbox */}
