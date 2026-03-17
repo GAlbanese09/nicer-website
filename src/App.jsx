@@ -1787,7 +1787,7 @@ function NicerWebsite() {
             }}
           >
             <a
-              href="mailto:nicer@tatscru.net"
+              href="mailto:nicer@nicertatscru.com"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
